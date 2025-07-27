@@ -231,6 +231,13 @@ rec_get_n_extern_new(
 			stored in one byte for 0..127.  The length
 			will be encoded in two bytes when it is 128 or
 			more, or when the field is stored externally. */
+
+			// 如果 maxleng <= 255 字节
+			// 这类列不可能溢写到页外（InnoDB 不会把这么小的列做 off-page）
+			// 因此长度前缀不需要额外的 “是否页外”的标志位，可以把 1 字节 8 个 bit 全部用来表示长度
+
+			// DATA_BIG_COL 是否是大列，什么是大列，长度大于 255，或者是那些 BLOB 等特殊类型，自己看源码
+			// 也没有判断编码了，因为大于 255 即使是 latin 也不可能用 1 个字节表示
 			if (DATA_BIG_COL(col)) {
 				if (len & 0x80) {
 					/* 1exxxxxxx xxxxxxxx */

@@ -3557,6 +3557,7 @@ fil_ibd_create(
 		}
 	}
 
+	// 操作系统层面创建一个文件？？
 	file = os_file_create(
 		innodb_data_file_key, path,
 		OS_FILE_CREATE | OS_FILE_ON_ERROR_NO_EXIT,
@@ -3627,6 +3628,8 @@ fil_ibd_create(
 	} else {
 		atomic_write = false;
 
+		// 设置文件大小
+		// 其实就是像文件里填充 0，填充大小是 size * UNIV_PAGE_SIZE -> 4 个 Page
 		success = os_file_set_size(
 			path, file, size * UNIV_PAGE_SIZE, srv_read_only_mode);
 	}

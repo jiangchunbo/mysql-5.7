@@ -409,7 +409,11 @@ page_delete_rec(
 
 struct page_cur_t{
 	const dict_index_t*	index;
+
+	// 指向页内的某一个记录，具体来说是记录头与记录体之间，记录体的开始
 	rec_t*		rec;	/*!< pointer to a record on page */
+
+	// 这个里面是每个字段的指针
 	ulint*		offsets;
 	buf_block_t*	block;	/*!< pointer to the block containing rec */
 };

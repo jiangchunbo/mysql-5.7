@@ -674,7 +674,9 @@ struct TABLE_SHARE
   uint db_options_in_use;		/* Options in use */
   uint db_record_offset;		/* if HA_REC_IN_SEQ */
   uint rowid_field_offset;		/* Field_nr +1 to rowid field */
+
   /* Primary key index number, used in TABLE::key_info[] */
+  /* 主键的索引位置，一般就是 0 */
   uint primary_key;                     
   uint next_number_index;               /* autoincrement key number */
   uint next_number_key_offset;          /* autoinc keypart offset in a key */

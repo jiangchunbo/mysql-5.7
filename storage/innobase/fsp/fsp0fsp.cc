@@ -1084,6 +1084,7 @@ fsp_header_init(
 
 	fil_space_t*		space	= mtr_x_lock_space(space_id, mtr);
 
+	// 获取第 0 页，表空间头页
 	const page_id_t		page_id(space_id, 0);
 	const page_size_t	page_size(space->flags);
 

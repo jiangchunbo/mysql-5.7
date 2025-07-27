@@ -247,11 +247,14 @@ because in GCC it returns a long. */
 
 /* For checking if mtype is BLOB or GEOMETRY, since we use BLOB as
 the underling datatype of GEOMETRY(not DATA_POINT) data. */
+// 检查是不是 BLOB 或者 GEOMETRY（空间类型）
 #define DATA_LARGE_MTYPE(mtype) ((mtype) == DATA_BLOB			\
 				 || (mtype) == DATA_VAR_POINT		\
 				 || (mtype) == DATA_GEOMETRY)
 
 /* For checking if data type is big length data type. */
+// 如果列的长度大于 255，即使字符集是 latin 也无法用 1 字节表示长度
+// 或者你直接定义了一个大字段
 #define DATA_BIG_LEN_MTYPE(len, mtype) ((len) > 255 || DATA_LARGE_MTYPE(mtype))
 
 /* For checking if the column is a big length column. */

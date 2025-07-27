@@ -849,6 +849,7 @@ rec_set_heap_no_new(
 The following function is used to test whether the data offsets in the record
 are stored in one-byte or two-byte format.
 @return TRUE if 1-byte form */
+// 这个函数貌似是用于旧的 REDUNDANT 格式，不用看了
 UNIV_INLINE
 ibool
 rec_get_1byte_offs_flag(
@@ -859,6 +860,12 @@ rec_get_1byte_offs_flag(
 #error "TRUE != 1"
 #endif
 
+    // #define REC_OLD_SHORT		3
+    // #define REC_OLD_SHORT_MASK	0x1UL
+    // #define REC_OLD_SHORT_SHIFT	0
+    // return((mach_read_from_1(rec - offs) & mask) >> shift);
+	// rec: 这是数据的开始指针
+    // 往前 3 个字节，读取这个字节的最后一个 bit
 	return(rec_get_bit_field_1(rec, REC_OLD_SHORT, REC_OLD_SHORT_MASK,
 				   REC_OLD_SHORT_SHIFT));
 }

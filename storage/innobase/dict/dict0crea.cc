@@ -371,10 +371,10 @@ dict_build_table_def_step(
 
 	trx_t*	trx = thr_get_trx(thr);
 
-        // 给dict_table_t对象分配一个table_id
+	// 给 dict_table_t 对象分配一个 table_id
 	dict_table_assign_new_id(table, trx);
 
-        // 创建并初始化ibd文件
+	// 创建并初始化 ibd 文件
 	err = dict_build_tablespace_for_table(table);
 	if (err != DB_SUCCESS) {
 		return(err);
@@ -482,7 +482,7 @@ dict_build_tablespace_for_table(
 			DICT_TF2_FLAG_UNSET(table,
 					    DICT_TF2_FTS_AUX_HEX_NAME););
 
-        // 每个表一个表空间文件
+    // 每个表一个表空间文件
 	if (needs_file_per_table) {
 		/* This table will need a new tablespace. */
 
@@ -491,6 +491,7 @@ dict_build_tablespace_for_table(
 		      || dict_table_get_format(table) >= UNIV_FORMAT_B);
 
 		/* Get a new tablespace ID */
+		// 获取 space Id
 		dict_hdr_get_new_id(NULL, NULL, &space, table, false);
 
 		DBUG_EXECUTE_IF(
@@ -540,7 +541,8 @@ dict_build_tablespace_for_table(
 		- page 2 is the first inode page,
 		- page 3 will contain the root of the clustered index of
 		the table we create here. */
-                // 创建ibd文件
+
+        // 创建ibd文件
 		err = fil_ibd_create(
 			space, table->name.m_name, filepath, fsp_flags,
 			FIL_IBD_FILE_INITIAL_SIZE);
@@ -556,6 +558,7 @@ dict_build_tablespace_for_table(
 		mtr.set_named_space(table->space);
 		dict_disable_redo_if_temporary(table, &mtr);
 
+		// 初始化 用户表空间的第 1 页 表空间头页，
 		bool ret = fsp_header_init(table->space,
 					   FIL_IBD_FILE_INITIAL_SIZE,
 					   &mtr);
@@ -1468,6 +1471,7 @@ dict_create_table_step(
 		node->state = TABLE_BUILD_TABLE_DEF;
 	}
 
+	// 当 state 是 BUILD_TABLE，做完一些操作之后会把 state 置为 BUILD_COL
 	if (node->state == TABLE_BUILD_TABLE_DEF) {
 
 		/* DO THE CHECKS OF THE CONSISTENCY CONSTRAINTS HERE */
@@ -1484,6 +1488,7 @@ dict_create_table_step(
 
 		thr->run_node = node->tab_def;
 
+		// 入参也是出参
 		return(thr);
 	}
 
@@ -1492,6 +1497,7 @@ dict_create_table_step(
 		if (node->col_no < (static_cast<ulint>(node->table->n_def)
 				    + static_cast<ulint>(node->table->n_v_def))) {
 
+			// 这个方法可能执行多次，看你定义了多少字段
 			dict_build_col_def_step(node);
 
 			node->col_no++;
@@ -2676,12 +2682,15 @@ dict_table_assign_new_id(
 	dict_table_t*	table,
 	trx_t*		trx)
 {
+	// intrinsic: 内在的、本质的、固有的。可以理解为系统内置
+	// 如果表是系统内置表
 	if (dict_table_is_intrinsic(table)) {
 		/* There is no significance of this table->id (if table is
 		intrinsic) so assign it default instead of something meaningful
 		to avoid confusion.*/
 		table->id = ULINT_UNDEFINED;
 	} else {
+		// 这个方法非常普适，它不仅可以获取 table id 也可以是 index id 或者 space id
 		dict_hdr_get_new_id(&table->id, NULL, NULL, table, false);
 	}
 

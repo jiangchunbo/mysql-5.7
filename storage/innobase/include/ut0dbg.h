@@ -56,6 +56,8 @@ ut_dbg_assertion_failed(
 
 /** Abort execution if EXPR does not evaluate to nonzero.
 @param EXPR assertion expression that should hold */
+
+// ut_ 这里的 ut_ 前缀就是 utility 工具
 #define ut_a(EXPR) do {						\
 	if (UNIV_UNLIKELY(!(ulint) (EXPR))) {			\
 		ut_dbg_assertion_failed(#EXPR,			\

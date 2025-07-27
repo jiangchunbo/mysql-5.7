@@ -59,7 +59,11 @@ dict_hdr_get(
 {
 	buf_block_t*	block;
 	dict_hdr_t*	header;
-        // 获取系统表空间page_no=7的页，该页存在的系统数据字典信息
+
+	// DICT_HDR_SPACE 0
+	// DICT_HDR_PAGE_NO 7
+	// 从表空间 0 中获取 第 7 页 ？反正得到一个 page_id_t 类型对象
+	// 获取系统表空间page_no=7的页，该页存在的系统数据字典信息
 	block = buf_page_get(page_id_t(DICT_HDR_SPACE, DICT_HDR_PAGE_NO),
 			     univ_page_size, RW_X_LATCH, mtr);
 	header = DICT_HDR + buf_block_get_frame(block);
@@ -122,12 +126,18 @@ dict_hdr_get_new_id(
 		x (original) and x+2 (new) and disk hdr will be updated
 		to reflect x + 2 entry.
 		We cannot allocate the same space id to different objects. */
+
+	// 获得一个 dict_hdr 字典头
 	dict_hdr = dict_hdr_get(&mtr);
 
 	if (table_id) {
+		// 读取当前的 table id
 		id = mach_read_from_8(dict_hdr + DICT_HDR_TABLE_ID);
+		// table id + 1
 		id++;
+		// 写入？
 		mlog_write_ull(dict_hdr + DICT_HDR_TABLE_ID, id, &mtr);
+		// 指针写入 table id
 		*table_id = id;
 	}
 

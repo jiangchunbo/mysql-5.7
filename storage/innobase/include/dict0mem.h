@@ -573,6 +573,10 @@ struct dict_col_t{
 
 	/* the remaining fields do not affect alphabetical ordering: */
 
+	// 列的长度，这是一个无符号 16 bit (2字节)
+	// 也就是可以表示的范围是 0 - 65535
+	// field->pack_length() 表示返回打包后的长度，并不是你定义的长度，而是真正占用的字节
+	// 对于 INT CHAR DATE 等类型是固定长度；对于变长类型是最大能够达到的长度
 	unsigned	len:16;		/*!< length; for MySQL data this
 					is field->pack_length(),
 					except that for a >= 5.0.3

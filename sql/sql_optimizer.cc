@@ -139,18 +139,26 @@ JOIN::optimize()
 {
   uint no_jbuf_after= UINT_MAX;
 
+  // 内部调试宏，仅 Debug 编译生效
   DBUG_ENTER("JOIN::optimize");
+
+  // 保证本 SELECT_LEX 不是派生表的叶子表
+  // 或者，所有查询表都已加锁
   assert(select_lex->leaf_table_count == 0 ||
          thd->lex->is_query_tables_locked() ||
          select_lex == unit->fake_select_lex);
+
+  // 保证 JOIN 结构尚未被重复初始化（防止 EXPLAIN 第二次调用）
   assert(tables == 0 &&
          primary_tables == 0 &&
          tables_list == (TABLE_LIST*)1);
 
   // to prevent double initialization on EXPLAIN
+  // 一个标记位，一条查询只允许 optimize 执行一次，EXPLAIN 第二次进入会直接返回
   if (optimized)
     DBUG_RETURN(0);
 
+  // RAII 对象，用于在优化接丢按捕获错误并将其与 SQLSTATE/错误码绑定
   Prepare_error_tracker tracker(thd);
 
   DEBUG_SYNC(thd, "before_join_optimize");
@@ -213,8 +221,11 @@ JOIN::optimize()
 
   /* dump_TABLE_LIST_graph(select_lex, select_lex->leaf_tables); */
 
+  // 如果有 distinct、order、group，那么就用一个特殊的 row limit
+  // 否则，使用 limit
   row_limit= ((select_distinct || order || group_list) ?
              HA_POS_ERROR : unit->select_limit_cnt);
+
   // m_select_limit is used to decide if we are likely to scan the whole table.
   m_select_limit= unit->select_limit_cnt;
 
@@ -372,6 +383,8 @@ JOIN::optimize()
 
   // Set up join order and initial access paths
   THD_STAGE_INFO(thd, stage_statistics);
+
+  // 🍏🍏🍏 构建 join 计划
   if (make_join_plan())
   {
     if (thd->killed)
@@ -499,6 +512,7 @@ JOIN::optimize()
 
   error= -1;					/* if goto err */
 
+  // 优化 distinct group order ？？？
   if (optimize_distinct_group_order())
     DBUG_RETURN(true);
 
@@ -5082,10 +5096,14 @@ bool JOIN::make_join_plan()
 
   Opt_trace_context * const trace= &thd->opt_trace;
 
+  // 创建并清零 JOIN::join_tab、best_positions、keyuse_array
   if (init_planner_arrays())           // Create and initialize the arrays
     DBUG_RETURN(true);
 
   // Outer join dependencies were initialized above, now complete the analysis.
+  // 当出现 LEFT JOIN 或者 RIGHT JOIN 时，把外连接的可为空依赖继续向下传播，
+  // 保证后面选表顺序时不会违背 SQL 语义
+  // 这里面似乎做了一些依赖排序
   if (select_lex->outer_join)
     propagate_dependencies();
 
@@ -5093,6 +5111,10 @@ bool JOIN::make_join_plan()
     trace_table_dependencies(trace, join_tab, primary_tables);
 
   // Build the key access information, which is the basis for ref access.
+  // 如果存在 WHERE 或者 OUTER 链接
+  // 那么进行 [等值推导]、常量折叠，识别能转化为 ref/range 访问你的列
+  // 结果写入 keyuse_arry 其中每条 KEYUSE 描述一个 "列=常量/列" 谓词与对应索引字段
+  // 如果发现额外的可下推过滤条件，但暂时还不能用索引，会放进 sargables 供稍后再试
   if (where_cond || select_lex->outer_join)
   {
     if (update_ref_and_keys(thd, &keyuse_array, join_tab, tables, where_cond,

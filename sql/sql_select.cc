@@ -1001,18 +1001,26 @@ void JOIN::cleanup_item_list(List<Item> &items) const
   @param thd    thread handler
   @returns false if success, true if error
 */
-
+// SELECT_LEX 代表一个 SELECT 子句
 bool SELECT_LEX::optimize(THD *thd)
 {
+  // MySQL 调试框架(DEBUG包)中的宏，用来记录函数入口
+  // 编译时如果启用了 --with-debug 调用栈就会被写入 trace 文件，便于排错
   DBUG_ENTER("SELECT_LEX::optimize");
 
+  // join 是 SELECT_LEX 成员
+  // join 最终会指向一个 JOIN 对象，负责执行计划的生成和执行
+  // 进入优化器之前要求 join 为空，保证不会无意间复用旧的 JOIN 对象
   assert(join == NULL);
+
+  // 创建真正干活的优化器与执行器核心对象 JOIN
   JOIN *const join_local= new JOIN(thd, this);
   if (!join_local)
     DBUG_RETURN(true);  /* purecov: inspected */
 
   set_join(join_local);
 
+  // join 优化
   if (join->optimize())
     DBUG_RETURN(true);
 

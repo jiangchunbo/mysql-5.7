@@ -341,6 +341,10 @@ ulonglong unique_hash(Field *field, ulonglong *hash);
 
 class Opt_trace_object;
 
+/**
+ * QEP_TAB Query Execution Plan table 是 MySQL Server 层在执行阶段用来描述一个参与 JOIN 的表
+ * 在当前执行计划中的状态与操作集合的核心结构体
+ */
 class QEP_TAB : public Sql_alloc, public QEP_shared_owner
 {
 public:

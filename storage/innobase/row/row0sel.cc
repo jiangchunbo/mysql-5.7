@@ -5112,6 +5112,7 @@ row_search_mvcc(
 	clust_index = dict_table_get_first_index(index->table);
 
 	/* Do some start-of-statement preparations */
+	/* 做一些语句开始之前的准备工作 */
 
 	if (!prebuilt->sql_stat_start) {
 		/* No need to set an intention lock or assign a read view */
@@ -5127,12 +5128,18 @@ row_search_mvcc(
 			fputc('\n', stderr);
 			ut_error;
 		}
-	} else if (prebuilt->select_lock_type == LOCK_NONE) {
+	}
+	// 如果这是一个 LOCK NONE 无锁？一致性读？
+	else if (prebuilt->select_lock_type == LOCK_NONE) {
 		/* This is a consistent read */
+		/* 这是一个一致性读 */
 		/* Assign a read view for the query */
-                // LOCK_NONE表示当前SQL执行不需要加锁，只需要保证一致性读就行了，比如最普通的select查询，生成read_view
+		/* 给这个 Query 分配一个 Read View */
+
+
+        // LOCK_NONE表示当前SQL执行不需要加锁，只需要保证一致性读就行了，比如最普通的select查询，生成read_view
 		if (!srv_read_only_mode) {
-                        // 一致性读，需要分配一个ReadView
+			// 一致性读，需要分配一个 ReadView
 			trx_assign_read_view(trx);
 		}
 

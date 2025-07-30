@@ -2277,6 +2277,7 @@ trx_assign_read_view(
 /*=================*/
 	trx_t*		trx)	/*!< in/out: active transaction */
 {
+	// 事务的状态必须是活跃的
 	ut_ad(trx->state == TRX_STATE_ACTIVE);
 
 	if (srv_read_only_mode) {
@@ -2285,6 +2286,7 @@ trx_assign_read_view(
 		return(NULL);
 
 	} else if (!MVCC::is_view_active(trx->read_view)) {
+		// 这里算幂等性吧，如果 MVCC View 是不活跃的，才会 open view
 		trx_sys->mvcc->view_open(trx->read_view, trx);
 	}
 

@@ -4568,7 +4568,7 @@ dberr_t
 row_search_mvcc(
     byte *buf,
     page_cur_mode_t mode,
-    row_prebuilt_t *prebuilt,
+    row_prebuilt_t *prebuilt, // 这个参数保存了当前语句的执行计划、检索键值、锁模式等
     ulint match_mode,
     ulint direction) {
     DBUG_ENTER("row_search_mvcc");
@@ -4576,7 +4576,9 @@ row_search_mvcc(
     dict_index_t *index = prebuilt->index; // 查询哪个索引
     ibool comp = dict_table_is_comp(index->table);
     const dtuple_t *search_tuple = prebuilt->search_tuple; // 可以用来在索引上进行搜索的字段和对应值，比如id字段和指定的值
-    btr_pcur_t *pcur = prebuilt->pcur; // 指向上一条查询结果记录
+
+    // 指向上一条查询结果记录
+    btr_pcur_t *pcur = prebuilt->pcur;
     trx_t *trx = prebuilt->trx;
     dict_index_t *clust_index;
     que_thr_t *thr;
@@ -5154,6 +5156,8 @@ row_search_mvcc(
 
 rec_loop:
     DEBUG_SYNC_C("row_search_rec_loop");
+
+    // 检查线程是不是被杀了
     if (trx_is_interrupted(trx)) {
         if (!spatial_search) {
             btr_pcur_store_position(pcur, &mtr);
@@ -5164,7 +5168,7 @@ rec_loop:
 
     /*-------------------------------------------------------------*/
     /* PHASE 4: Look for matching records in a loop */
-    // 获取pcur指向的记录
+    // 获取 pcur 指向的记录
     rec = btr_pcur_get_rec(pcur);
 
     ut_ad(!!page_rec_is_comp(rec) == comp);

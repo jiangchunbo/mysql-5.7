@@ -1147,6 +1147,8 @@ row_vers_build_for_consistent_read(
 
 	ut_ad(rec_offs_validate(rec, index, *offsets));
 
+	// 获得当前记录的 trx_id
+	// 此时可能还不能用这个，要找到可以用的版本，通过 undo pointer 回溯
 	trx_id = row_get_rec_trx_id(rec, index, *offsets);
 
 	ut_ad(!view->changes_visible(trx_id, index->table->name));
@@ -1167,6 +1169,7 @@ row_vers_build_for_consistent_read(
 		/* If purge can't see the record then we can't rely on
 		the UNDO log record. */
 
+		// 通过 undo
 		bool	purge_sees = trx_undo_prev_version_build(
 			rec, mtr, version, index, *offsets, heap,
 			&prev_version, NULL, vrow, 0);

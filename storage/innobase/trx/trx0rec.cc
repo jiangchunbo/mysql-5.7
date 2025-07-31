@@ -2239,6 +2239,8 @@ trx_undo_prev_version_build(
 	ut_ad(rec_offs_validate(rec, index, offsets));
 	ut_a(dict_index_is_clust(index));
 
+	// 获取聚集索引记录那一条记录 (rec) 的回滚指针
+	// 因为我说了，这条记录当前的面貌还不一定能用，要尝试回溯
 	roll_ptr = row_get_rec_roll_ptr(rec, index, offsets);
 
 	*old_vers = NULL;
@@ -2248,12 +2250,16 @@ trx_undo_prev_version_build(
 		return(true);
 	}
 
+	// 获取聚集索引记录那一条记录 (rec) 的事务 id
+	// 因为我说了，这条记录当前的面貌还不一定能用，trx_id 可能是被当前活跃事务修改的
 	rec_trx_id = row_get_rec_trx_id(rec, index, offsets);
 
 	/* REDO rollback segment are used only for non-temporary objects.
 	For temporary objects NON-REDO rollback segments are used. */
 	bool is_redo_rseg =
 		dict_table_is_temporary(index->table) ? false : true;
+
+	// 获得 undo 记录
 	if (trx_undo_get_undo_rec(
 		roll_ptr, rec_trx_id, heap, is_redo_rseg,
 		index->table->name, &undo_rec)) {
@@ -2268,6 +2274,7 @@ trx_undo_prev_version_build(
 		}
 	}
 
+	// 这里可能指向的是前一个版本的 rec
 	ptr = trx_undo_rec_get_pars(undo_rec, &type, &cmpl_info,
 				    &dummy_extern, &undo_no, &table_id);
 

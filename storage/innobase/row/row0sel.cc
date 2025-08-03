@@ -4574,7 +4574,7 @@ row_search_mvcc(
     DBUG_ENTER("row_search_mvcc");
 
     dict_index_t *index = prebuilt->index; // 查询哪个索引
-    ibool comp = dict_table_is_comp(index->table);
+    ibool comp = dict_table_is_comp(index->table); // 是否使用压缩页
     const dtuple_t *search_tuple = prebuilt->search_tuple; // 可以用来在索引上进行搜索的字段和对应值，比如id字段和指定的值
 
     // 指向上一条查询结果记录
@@ -5104,7 +5104,8 @@ row_search_mvcc(
         // select * from user_info where id <= 3 order by id desc; mode为mode为PAGE_CUR_LE
 
 
-        // 遍历B+树，根据search_tuple中指定的查询字段和值，根据mode找到第一个符合条件的记录
+        // mode: Page cursor search modes
+        // 遍历 B+ 树，根据 search_tuple 中指定的查询字段和值，根据 mode 找到第一个符合条件的记录
         btr_pcur_open_with_no_init(index, search_tuple, mode,
                                    BTR_SEARCH_LEAF,
                                    pcur, 0, &mtr);

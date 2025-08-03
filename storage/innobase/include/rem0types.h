@@ -38,6 +38,7 @@ Created 5/30/1994 Heikki Tuuri
 typedef byte	rec_t;
 
 /* Maximum values for various fields (for non-blob tuples) */
+// 字段（对于非 blob 元组）的最大值
 #define REC_MAX_N_FIELDS	(1024 - 1)
 #define REC_MAX_HEAP_NO		(2 * 8192 - 1)
 #define REC_MAX_N_OWNED		(16 - 1)
@@ -49,6 +50,14 @@ possibly, with some of the system columns in it, and then adds the 3
 system columns (again) using dict_table_add_system_columns(). The problem
 is that mlog_parse_index() cannot recognize the system columns by
 just having n_fields, n_uniq and the lengths of the columns. */
+/**
+ * 用户自定义字段/列的最大数量。保留列是 InnoDB 内部添加的列：
+ * DB_ROW_ID，DB_TRX_ID，DB_ROLL_PTR
+ * 我们需要 * 2 是因为 mlog_parse_index() 可能会创建一个虚拟表对象，
+ * 其中包含一些系统列，然后再使用 dict_table_add_system_columns()
+ * 添加这 3 个系统列（重复添加）。问题在于 mlog_parse_index()
+ * 仅仅通过 n_fields、n_uniq 和列的长度无法识别系统列。
+ */
 #define REC_MAX_N_USER_FIELDS	(REC_MAX_N_FIELDS - DATA_N_SYS_COLS * 2)
 
 /* REC_ANTELOPE_MAX_INDEX_COL_LEN is measured in bytes and is the maximum

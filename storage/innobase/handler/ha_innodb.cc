@@ -7039,6 +7039,9 @@ ha_innobase::build_template(
         use exclusive row level locks, for example, if the read is
         done in an UPDATE statement. */
 
+        // 如果我们使用排他性行级锁定，我们总是抓取整个聚集索引记录
+        // 例如，在 UPDATE 语句中的读取
+
         whole_row = true;
     } else if (!whole_row) {
         if (m_prebuilt->hint_need_to_fetch_extra_cols
@@ -7071,10 +7074,14 @@ ha_innobase::build_template(
         }
     }
 
+    // 获得这张表的第一个索引，第一个索引就是聚集索引！
     clust_index = dict_table_get_first_index(m_prebuilt->table);
 
+    // index: 将要使用的索引(?)
+    // 如果抓取整行数据，那么就用聚集索引，否则就用 ->index (不过这是什么呢)
     index = whole_row ? clust_index : m_prebuilt->index;
 
+    // 如果将要使用的索引是
     m_prebuilt->need_to_access_clustered = (index == clust_index);
 
     /* Either m_prebuilt->index should be a secondary index, or it
@@ -9936,9 +9943,10 @@ create_table_info_t::create_table_def() {
 
     /* MySQL does the name length check. But we do additional check
     on the name length here */
-    const size_t table_name_len = strlen(m_table_name); // 这一个 char* 包含 database，例如 my_db/t1
+    // 这一个 char* 包含 database，例如 my_db/t1
+    const size_t table_name_len = strlen(m_table_name);
 
-    // 超过最大长度，也肯定是不行的
+    // table name 表名超过最大长度，也肯定是不行的
     if (table_name_len > MAX_FULL_NAME_LEN) {
         push_warning_printf(
             m_thd, Sql_condition::SL_WARNING,
@@ -9948,7 +9956,8 @@ create_table_info_t::create_table_def() {
         DBUG_RETURN(ER_TABLE_NAME);
     }
 
-    // 以 / 结尾，表名是空的，肯定是不行的
+    // table name 以 / 结尾，表名是空的，肯定是不行的
+    // 实际上，经过测试，你即使使用 '/' 后缀创建数据库，实际上也没有用
     if (m_table_name[table_name_len - 1] == '/') {
         push_warning_printf(
             m_thd, Sql_condition::SL_WARNING,
@@ -9958,24 +9967,27 @@ create_table_info_t::create_table_def() {
         DBUG_RETURN(ER_WRONG_TABLE_NAME);
     }
 
+    // 这里的命名真是令人迷惑，其实是返回字段的格式，但一开始可能令人误解为 Field[]
     n_cols = m_form->s->fields;
 
     /* Find out any virtual column */
     // 遍历字段，找到任何虚拟字段
     for (i = 0; i < n_cols; i++) {
-        // 获取 Field
+        // 获取 Field，通过这个对象可以得到字段的性质
         Field *field = m_form->field[i];
 
+        // 统计多少个虚拟字段，累加到 num_v
         if (innobase_is_v_fld(field)) {
             num_v++;
         }
     }
 
+    // 事务状态此时必须是未开始
     ut_ad(trx_state_eq(m_trx, TRX_STATE_NOT_STARTED));
 
     /* Check whether there already exists a FTS_DOC_ID column */
     // 检查是否存在 FTS full text search
-    if (create_table_check_doc_id_col(m _trx, m_form, &doc_id_col)) {
+    if (create_table_check_doc_id_col(m_trx, m_form, &doc_id_col)) {
         /* Raise error if the Doc ID column is of wrong type or name */
         if (doc_id_col == ULINT_UNDEFINED) {
             err = DB_ERROR;
@@ -9999,7 +10011,8 @@ create_table_info_t::create_table_def() {
         actual_n_cols += 1;
     }
 
-    // 创建dict_table_t对象
+    // 创建表的内存对象，memory 对象而已
+    // dict_table_t
     table = dict_mem_table_create(m_table_name, space_id,
                                   actual_n_cols, num_v, m_flags, m_flags2);
 
@@ -11779,6 +11792,7 @@ create_table_info_t::initialize() {
     ut_ad(m_thd != NULL);
     ut_ad(m_create_info != NULL);
 
+    // 检查字段的数量是否大于最大值
     if (m_form->s->fields > REC_MAX_N_USER_FIELDS) {
         DBUG_RETURN(HA_ERR_TOO_MANY_FIELDS);
     }
@@ -12160,10 +12174,10 @@ create_table_info_t::allocate_trx() {
     m_trx->ddl = true;
 }
 
-/** Create a new table to an InnoDB database.
-@param[in]	name		Table name, format: "db/table_name".
-@param[in]	form		Table format; columns and index information.
-@param[in]	create_info	Create info (including create statement string).
+/** Create a new table to an InnoDB database. 创建一个新的表，投放到 InnoDB 数据库
+@param[in]	name		Table name, format: "db/table_name". 表名称，格式是 db/table_name
+@param[in]	form		Table format; columns and index information. 表的格式。包含列、索引信息
+@param[in]	create_info	Create info (including create statement string). 创建信息。包含创建语句字符串
 @return	0 if success else error number. */
 int
 ha_innobase::create(
@@ -12178,6 +12192,7 @@ ha_innobase::create(
     trx_t *trx;
     DBUG_ENTER("ha_innobase::create");
 
+    // C++ 在栈上创建对象
     create_table_info_t info(ha_thd(),
                              form,
                              create_info,
@@ -12210,7 +12225,7 @@ ha_innobase::create(
         row_mysql_lock_data_dictionary(trx);
     }
 
-    // 这里会创建ibd文件
+    // 这里会创建 ibd 文件
     // create_table_info_t info
     if ((error = info.create_table())) {
         goto cleanup;
